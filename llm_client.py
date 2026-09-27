@@ -20,6 +20,28 @@ __embed_client = OpenAI(
 )
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 
+async def chat_completion_stream(messages: list[dict], temperature: float = 0.7):
+    """Stream response chunks as they arrive."""
+    from openai import AsyncOpenAI
+    
+    async_client = AsyncOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        timeout=120.0
+    )
+    
+    stream = await async_client.chat.completions.create(
+        model=CHAT_MODEL,
+        messages=messages,
+        temperature=temperature,
+        stream=True,
+        extra_headers={"HTTP-Referer": "http://localhost", "X-OpenRouter-Title": "MCP RAG Agent"}
+    )
+    
+    async for chunk in stream:
+        if chunk.choices and chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
+
 def get_embedding(text: str) -> list[float]:
     """Return the vector embedding for a piece of text."""
     response = __embed_client.embeddings.create(
