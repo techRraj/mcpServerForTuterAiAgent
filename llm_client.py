@@ -5,50 +5,26 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# OpenRouter uses the OpenAI SDK with a custom base_url
+# --- Chat client (OpenRouter) ---
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.getenv("OPENROUTER_API_KEY"),
-    timeout=120.0,  # 120 seconds — enough for slow free models
+    timeout=120.0,
 )
-CHAT_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
-# Embeddings: OpenRouter does NOT provide embeddings, so use OpenAI directly
-# (you need an OpenAI key), OR swap for a free local model below.
-__embed_client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY", os.getenv("OPENROUTER_API_KEY")),
-    base_url=os.getenv("EMBEDDING_BASE_URL", "https://api.openai.com/v1"),
-)
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 
-async def chat_completion_stream(messages: list[dict], temperature: float = 0.7):
-    """Stream response chunks as they arrive."""
-    from openai import AsyncOpenAI
-    
-    async_client = AsyncOpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        timeout=120.0
-    )
-    
-    stream = await async_client.chat.completions.create(
-        model=CHAT_MODEL,
-        messages=messages,
-        temperature=temperature,
-        stream=True,
-        extra_headers={"HTTP-Referer": "http://localhost", "X-OpenRouter-Title": "MCP RAG Agent"}
-    )
-    
-    async for chunk in stream:
-        if chunk.choices and chunk.choices[0].delta.content:
-            yield chunk.choices[0].delta.content
+CHAT_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+
+# --- Embedding client (also OpenRouter, no OpenAI key needed) ---
+_embed_client = OpenAI(
+    base_url=os.getenv("EMBEDDING_BASE_URL", "https://openrouter.ai/api/v1"),
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    timeout=120.0,
+)
+
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nvidia/nemotron-3-embed-1b:free")
+
 
 def get_embedding(text: str) -> list[float]:
-    """Return the vector embedding for a piece of text."""
-    response = __embed_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=text,
-    )
-    return response.data[0].embedding
     """Return the vector embedding for a piece of text."""
     response = _embed_client.embeddings.create(
         model=EMBEDDING_MODEL,
