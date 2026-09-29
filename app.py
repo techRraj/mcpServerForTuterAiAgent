@@ -74,21 +74,21 @@ class CreateDepartmentRequest(BaseModel):
 
 
 # ============================================================
-# Pages
+# Pages — using NEW Starlette 1.7 TemplateResponse API
 # ============================================================
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request, "login.html")
 
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_page(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
+    return templates.TemplateResponse(request, "chat.html")
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse(request, "admin.html")
 
 
 # ============================================================
@@ -256,6 +256,5 @@ async def admin_stats(department_id: int = None, user: dict = Depends(require_ad
 # ============================================================
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run(app, host="0.0.0.0", port=port)
